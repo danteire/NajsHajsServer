@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15  # Używamy oficjalnego obrazu PostgreSQL w wersji 15
+    container_name: najshajs_postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=history_db
+    ports:
+      - "5432:5432"  # Mapuje port 5432 kontenera na port 5432 Twojego komputera
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data  # Zapisuje dane bazy na Twoim dysku
+
+volumes:
+  postgres-data:
