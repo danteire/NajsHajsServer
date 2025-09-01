@@ -4,6 +4,8 @@ from datetime import datetime
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, inspect, ForeignKey, Boolean
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship
+from sqlalchemy.sql import func
+
 
 # --- KONFIGURACJA BAZY ---
 DATABASE_URL = "postgresql://postgres:admin@3.71.11.3:8542/NajsHajs"
@@ -18,12 +20,10 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, nullable=False)
-    password = Column(String, nullable=False)
-    admin = Column(Boolean)
-
-    # Relacja z historią
-    history = relationship("History", back_populates="user")
+    username = Column(String, unique=True, index=True, nullable=False)
+    password = Column(String, nullable=False)  # zahashowane hasło
+    admin = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
 class History(Base):
