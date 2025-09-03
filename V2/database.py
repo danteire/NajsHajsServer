@@ -8,9 +8,12 @@ from sqlalchemy.sql import func
 
 
 # --- KONFIGURACJA BAZY ---
-DATABASE_URL = "postgresql://postgres:admin@3.71.11.3:8542/NajsHajs"
 
-engine = create_engine(DATABASE_URL)
+DATABASE_URL = ["postgresql://postgres:admin@3.71.11.3:8542/NajsHajs", "postgresql://user:password@localhost:5432/najs_hajs_db"]
+
+dbChosen = int (input("Podaj baze danych do pracy \n 0 - remote\n 1 - local\n"))
+
+engine = create_engine(DATABASE_URL[dbChosen])
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -25,6 +28,7 @@ class User(Base):
     admin = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+    history = relationship("History", back_populates="user")
 
 class History(Base):
     __tablename__ = "history"
@@ -38,6 +42,14 @@ class History(Base):
 
     # Relacja do User
     user = relationship("User", back_populates="history")
+
+class Banknote(Base):
+    __tablename__ = "banknote"
+
+    id = Column(Integer, primary_key=True, index=True)
+    currency = Column(String(5), nullable=False)  # varchar(5)
+    value = Column(Integer, nullable=False)
+    country = Column(String(50), nullable=False)  # varchar(50)
 
 
 # --- FUNKCJE NARZĘDZIOWE ---
@@ -65,7 +77,7 @@ def check_and_prepare_database():
         print("✅ Połączenie z bazą danych udane!")
         print(f"   Znalezione tabele: {existing_tables}")
 
-        required_tables = [User.__tablename__, History.__tablename__]
+        required_tables = [User.__tablename__, History.__tablename__, Banknote.__tablename__]
         missing_tables = [t for t in required_tables if t not in existing_tables]
 
         if missing_tables:
