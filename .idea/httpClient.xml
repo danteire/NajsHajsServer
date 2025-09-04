@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="HttpClientEndpointsTabState">
-    <option name="requestToText" value="&lt;CachedHttpClientTabRequests&gt;&#10;  &lt;entry key=&quot;63d726ce0c4905b3c3271c9a6717db45e9bccbbb&quot; value=&quot;###&amp;#10;GET http://localhost:8000/&quot; /&gt;&#10;  &lt;entry key=&quot;973d9ec44a4b000383849a5514c5622929053a38&quot; value=&quot;###&amp;#10;GET http://localhost:8000/admin/&quot; /&gt;&#10;  &lt;entry key=&quot;bcdefbe52a426b1f0da07417f86a367f281bf272&quot; value=&quot;###&amp;#10;GET http://localhost:8000/user/&quot; /&gt;&#10;&lt;/CachedHttpClientTabRequests&gt;" />
+    <option name="requestToText" value="&lt;CachedHttpClientTabRequests&gt;&#10;  &lt;entry key=&quot;4440ff6dcd217e89756ebb91b4b14fb7bd733f4f&quot; value=&quot;###&amp;#10;DELETE http://localhost:8000/admin/users/1&quot; /&gt;&#10;  &lt;entry key=&quot;c6ef2d79babf80508b45ff96318699235ef7ac52&quot; value=&quot;###&amp;#10;GET http://localhost:8000/admin/users/{{userID}}&quot; /&gt;&#10;  &lt;entry key=&quot;04b33bc30321eb3db4076a05458627118dc33e47&quot; value=&quot;###&amp;#10;POST http://localhost:8000/user/upload&quot; /&gt;&#10;  &lt;entry key=&quot;4172d136d74cc8b3e6e64a5951cab5e17716b78b&quot; value=&quot;###&amp;#10;GET http://localhost:8000/user/history&quot; /&gt;&#10;  &lt;entry key=&quot;f12dfd994dbf7bd556b95575e06b4b4bb0756a65&quot; value=&quot;###&amp;#10;POST http://localhost:8000/admin/users&quot; /&gt;&#10;&lt;/CachedHttpClientTabRequests&gt;" />
   </component>
 </project>
