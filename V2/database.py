@@ -1,19 +1,14 @@
 import sys
 from datetime import datetime
 
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, inspect, ForeignKey, Boolean
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, inspect, ForeignKey, Boolean, Text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship
-from sqlalchemy.sql import func
-
 
 # --- KONFIGURACJA BAZY ---
+DATABASE_URL = "postgresql://postgres:admin@localhost:5432/NajsHajs"
 
-DATABASE_URL = ["postgresql://postgres:admin@3.71.11.3:8542/NajsHajs", "postgresql://user:password@localhost:5432/najs_hajs_db"]
-
-dbChosen = int (input("Podaj baze danych do pracy \n 0 - remote\n 1 - local\n"))
-
-engine = create_engine(DATABASE_URL[dbChosen])
+engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -23,12 +18,14 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True, nullable=False)
-    password = Column(String, nullable=False)  # zahashowane hasło
+    username = Column(String, unique=True, nullable=False)
+    password = Column(String, nullable=False)
     admin = Column(Boolean, default=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime, default=datetime.utcnow)
 
+    # Relacja z historią
     history = relationship("History", back_populates="user")
+
 
 class History(Base):
     __tablename__ = "history"
@@ -39,17 +36,25 @@ class History(Base):
     rf_pred = Column(String)
     svm_pred = Column(String)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    image = Column(String, nullable=True)  # Ścieżka do obrazu użytkownika
 
     # Relacja do User
     user = relationship("User", back_populates="history")
 
+
 class Banknote(Base):
-    __tablename__ = "banknote"
+    __tablename__ = "banknotes"
 
     id = Column(Integer, primary_key=True, index=True)
-    currency = Column(String(5), nullable=False)  # varchar(5)
-    value = Column(Integer, nullable=False)
-    country = Column(String(50), nullable=False)  # varchar(50)
+    country = Column(String(100), nullable=False)  # Kraj
+    currency = Column(String(100), nullable=False)  # Waluta
+    denomination = Column(String(50), nullable=False)  # Nominał, np. '10 PLN'
+    effigy = Column(String(255))  # Wizerunek, np. 'Mieszko I'
+    dimensions = Column(String(50))  # Wymiary, np. '120 x 62 mm'
+    description = Column(Text)  # Opis
+    image_avers = Column(String(255), nullable=False)   # Ścieżka do zdjęcia awersu
+    image_rewers = Column(String(255), nullable=False)  # Ścieżka do zdjęcia rewersu
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 
 # --- FUNKCJE NARZĘDZIOWE ---

@@ -6,9 +6,9 @@ services:
     container_name: najshajs_postgres
     restart: always
     environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=history_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_DB=NajsHajs
     ports:
       - "5432:5432"  # Mapuje port 5432 kontenera na port 5432 Twojego komputera
     volumes:
