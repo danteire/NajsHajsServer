@@ -9,11 +9,18 @@ import base64
 import os
 import uuid
 from datetime import datetime, timedelta
+import pytz
 from typing import List
 from sqlalchemy import func, desc
 
 # --- IMPORTY BAZY ---
 from sqlalchemy.orm import Session
+
+# Funkcja do pobierania czasu polskiego
+def get_polish_time():
+    """Zwraca aktualny czas w strefie czasowej Polski"""
+    poland_tz = pytz.timezone('Europe/Warsaw')
+    return datetime.now(poland_tz)
 from database import get_db, check_and_prepare_database, User, History, Banknote
 import database as db
 
@@ -197,7 +204,6 @@ async def startup_event():
     load_models()
     check_and_prepare_database()  # Tworzymy bazę i tabele przy starcie
     create_test_user()  # Tworzymy testowego użytkownika
-
 
 
 
@@ -475,7 +481,7 @@ def get_admin_stats(db: Session = Depends(get_db), admin_user: User = Depends(ge
     total_banknotes = db.query(Banknote).count()
     
     # Aktywność z ostatnich 24 godzin
-    yesterday = datetime.utcnow() - timedelta(days=1)
+    yesterday = get_polish_time() - timedelta(days=1)
     recent_activity = db.query(History).filter(History.timestamp >= yesterday).count()
     
     return AdminStats(

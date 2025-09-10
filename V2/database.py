@@ -1,5 +1,6 @@
 import sys
 from datetime import datetime
+import pytz
 
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, inspect, ForeignKey, Boolean, Text
 from sqlalchemy.exc import OperationalError
@@ -7,6 +8,12 @@ from sqlalchemy.orm import sessionmaker, declarative_base, relationship
 
 # --- KONFIGURACJA BAZY ---
 DATABASE_URL = "postgresql://postgres:admin@localhost:5432/NajsHajs"
+
+# Funkcja do pobierania czasu polskiego
+def get_polish_time():
+    """Zwraca aktualny czas w strefie czasowej Polski"""
+    poland_tz = pytz.timezone('Europe/Warsaw')
+    return datetime.now(poland_tz)
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -21,7 +28,7 @@ class User(Base):
     username = Column(String, unique=True, nullable=False)
     password = Column(String, nullable=False)
     admin = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=get_polish_time)
 
     # Relacja z historią
     history = relationship("History", back_populates="user")
@@ -31,7 +38,7 @@ class History(Base):
     __tablename__ = "history"
 
     id = Column(Integer, primary_key=True, index=True)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=get_polish_time)
     knn_pred = Column(String)
     rf_pred = Column(String)
     svm_pred = Column(String)
@@ -54,7 +61,7 @@ class Banknote(Base):
     description = Column(Text)  # Opis
     image_avers = Column(String(255), nullable=False)   # Ścieżka do zdjęcia awersu
     image_rewers = Column(String(255), nullable=False)  # Ścieżka do zdjęcia rewersu
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=get_polish_time)
 
 
 # --- FUNKCJE NARZĘDZIOWE ---
