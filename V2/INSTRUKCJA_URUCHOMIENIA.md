@@ -1,4 +1,4 @@
-# Instrukcja uruchomienia serwera NajsHajs z JWT
+gi# Instrukcja uruchomienia serwera NajsHajs z JWT
 
 ## Wymagania
 - Python 3.8+
