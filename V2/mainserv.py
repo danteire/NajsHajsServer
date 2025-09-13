@@ -16,23 +16,20 @@ from sqlalchemy import func, desc
 # --- IMPORTY BAZY ---
 from sqlalchemy.orm import Session
 
-# Funkcja do pobierania czasu polskiego
+
 def get_polish_time():
-    """Zwraca aktualny czas w strefie czasowej Polski"""
     poland_tz = pytz.timezone('Europe/Warsaw')
     return datetime.now(poland_tz)
 from database import get_db, check_and_prepare_database, User, History, Banknote
 import database as db
 
-# Importujemy funkcje ML
 from classify import procesIMG, load_models
 
-# Importujemy funkcje autoryzacji
 import auth
 
 # --- Modele Pydantic ---
 class ImageData(BaseModel):
-    image: str  # base64 string
+    image: str
 
 class Token(BaseModel):
     access_token: str
@@ -85,9 +82,8 @@ class BanknoteResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# --- FUNKCJE POMOCNICZE ---
+
 def save_base64_image(base64_string, folder_path="C:/xampp/htdocs/react_front_app/resources"):
-    """Zapisuje obraz base64 do pliku i zwraca ścieżkę"""
     try:
         # Utwórz folder jeśli nie istnieje
         os.makedirs(folder_path, exist_ok=True)
@@ -96,21 +92,19 @@ def save_base64_image(base64_string, folder_path="C:/xampp/htdocs/react_front_ap
         filename = f"{uuid.uuid4()}.jpg"
         file_path = os.path.join(folder_path, filename)
         
-        # Dekoduj base64
+
         if base64_string.startswith('data:image'):
-            # Usuń prefix data:image/...;base64,
             base64_string = base64_string.split(',')[1]
         
         image_data = base64.b64decode(base64_string)
         
-        # Otwórz obraz i zapisz jako JPEG
+
         image = Image.open(io.BytesIO(image_data))
-        # Konwertuj do RGB jeśli to PNG z przezroczystością
+
         if image.mode in ('RGBA', 'LA', 'P'):
             image = image.convert('RGB')
         image.save(file_path, 'JPEG', quality=85)
         
-        # Zwróć względną ścieżkę dla bazy danych
         return f"resources/{filename}"
         
     except Exception as e:
@@ -121,7 +115,6 @@ def save_base64_image(base64_string, folder_path="C:/xampp/htdocs/react_front_ap
         )
 
 def delete_image_file(image_path):
-    """Usuwa plik obrazu"""
     try:
         if image_path and image_path.startswith('/resources/'):
             filename = image_path.split('/')[-1]
@@ -131,7 +124,7 @@ def delete_image_file(image_path):
     except Exception as e:
         print(f"Error deleting image: {e}")
 
-# --- Aplikacja i Startup Event ---
+
 app = FastAPI()
 
 
@@ -155,14 +148,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount dla statycznych plików (obrazy banknotów i użytkowników)
+
 app.mount("/resources", StaticFiles(directory="C:/xampp/htdocs/react_front_app/resources"), name="resources")
 
 def create_test_user():
-    """Tworzy testowego użytkownika i administratora jeśli nie istnieją."""
     db_session = next(get_db())
     try:
-        # Sprawdź czy testowy użytkownik już istnieje
         existing_user = db_session.query(User).filter(User.username == "test").first()
         if not existing_user:
             # Utwórz testowego użytkownika
@@ -177,8 +168,8 @@ def create_test_user():
             print("✅ Utworzono testowego użytkownika: test/test123")
         else:
             print("✅ Testowy użytkownik już istnieje")
-            
-        # Sprawdź czy administrator już istnieje
+
+
         existing_admin = db_session.query(User).filter(User.username == "admin").first()
         if not existing_admin:
             # Utwórz administratora
@@ -202,8 +193,8 @@ def create_test_user():
 @app.on_event("startup")
 async def startup_event():
     load_models()
-    check_and_prepare_database()  # Tworzymy bazę i tabele przy starcie
-    create_test_user()  # Tworzymy testowego użytkownika
+    check_and_prepare_database()
+    create_test_user()
 
 
 
@@ -216,7 +207,7 @@ class HistoryItem(BaseModel):
     rf_pred: str
     svm_pred: str
     user_id: int | None
-    image: str | None   # <-- może być None
+    image: str | None
 
     class Config:
         from_attributes = True
@@ -247,7 +238,7 @@ class AdminHistoryEntry(BaseModel):
     class Config:
         from_attributes = True
 
-# Modele dla oryginalnego API admin_panel
+
 class AdminUpdateRequest(BaseModel):
     admin: bool
 
@@ -257,9 +248,7 @@ class CreateUserRequest(BaseModel):
     admin: bool = False
 
 
-# --- Funkcje pomocnicze ---
 def get_admin_user(current_user: User = Depends(auth.get_current_user)):
-    """Sprawdza czy użytkownik ma uprawnienia administratora"""
     if not current_user.admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -273,9 +262,9 @@ def read_root():
     return {"message": "Hello, FastAPI! Models are loaded and ready."}
 
 # --- Endpointy autoryzacji ---
+# Endpoint do logowania - zwraca JWT token.
 @app.post("/api/token", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    """Endpoint do logowania - zwraca JWT token."""
     user = auth.authenticate_user(db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(
@@ -289,10 +278,10 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
+# Endpoint do rejestracji nowego użytkownika.
 @app.post("/api/register", response_model=UserResponse)
 async def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
-    """Endpoint do rejestracji nowego użytkownika."""
-    # Sprawdź czy użytkownik już istnieje
+
     existing_user = db.query(User).filter(User.username == user_data.username).first()
     if existing_user:
         raise HTTPException(
@@ -313,9 +302,10 @@ async def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
     
     return new_user
 
+# Endpoint do pobierania informacji o zalogowanym użytkowniku.
 @app.get("/api/me", response_model=UserResponse)
 async def read_users_me(current_user: User = Depends(auth.get_current_user)):
-    """Endpoint do pobierania informacji o zalogowanym użytkowniku."""
+
     return current_user
 
 
@@ -367,20 +357,17 @@ async def upload_image(data: ImageData, db: Session = Depends(get_db), current_u
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
+# Endpoint do pobierania historii zalogowanego użytkownika.
 @app.get("/api/history", response_model=list[HistoryItem])
 def get_history(db: Session = Depends(get_db), current_user: User = Depends(auth.get_current_user)):
-    """
-    Pobiera historię przetworzonych obrazów zalogowanego użytkownika.
-    """
+
     history = db.query(History).filter(History.user_id == current_user.id).order_by(History.timestamp.desc()).all()
     return history
 
+# Endpoint do usuwania pojedynczego wpisu z historii zalogowanego użytkownika.
 @app.delete("/api/history/{history_id}")
 def delete_history_item(history_id: int, db: Session = Depends(get_db), current_user: User = Depends(auth.get_current_user)):
-    """
-    Usuwa pojedynczy wpis z historii zalogowanego użytkownika.
-    """
+
     history_item = db.query(History).filter(
         History.id == history_id,
         History.user_id == current_user.id
@@ -397,11 +384,10 @@ def delete_history_item(history_id: int, db: Session = Depends(get_db), current_
     
     return {"message": "Wpis został usunięty z historii"}
 
+# Endpoint do pobierania szczegółów pojedynczego wpisu z historii zalogowanego użytkownika.
 @app.get("/api/history/{history_id}/details")
 def get_history_item_details(history_id: int, db: Session = Depends(get_db), current_user: User = Depends(auth.get_current_user)):
-    """
-    Pobiera szczegóły pojedynczego wpisu z historii zalogowanego użytkownika.
-    """
+    
     history_item = db.query(History).filter(
         History.id == history_id,
         History.user_id == current_user.id
@@ -424,9 +410,9 @@ def get_history_item_details(history_id: int, db: Session = Depends(get_db), cur
     }
 
 # --- Endpointy gościa ---
+# Endpoint dla gości - analiza obrazu bez autoryzacji.
 @app.post("/api/guest/upload")
 async def guest_upload(file: UploadFile = File(...)):
-    """Endpoint dla gości - analiza obrazu bez autoryzacji"""
     try:
         # Sprawdź typ pliku
         if not file.content_type.startswith('image/'):
@@ -442,25 +428,22 @@ async def guest_upload(file: UploadFile = File(...)):
                 detail="Plik jest za duży. Maksymalny rozmiar to 10MB"
             )
         
-        # Odczytaj zawartość pliku
         contents = await file.read()
         
-        # Konwertuj na base64
         import base64
         base64_string = base64.b64encode(contents).decode('utf-8')
         
-        # --- Dekodowanie obrazu --- (dokładnie jak w głównym endpoincie)
+        # --- Dekodowanie obrazu ---
         image_data = base64_string
         image_bytes = base64.b64decode(image_data)
         image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
 
-        # --- Klasyfikacja --- (dokładnie jak w głównym endpoincie)
+        # --- Klasyfikacja ---
         try:
             classification_results = procesIMG(image)
         except Exception as e:
             raise HTTPException(status_code=520, detail=str(e))
 
-        # Zwróć wyniki bezpośrednio (dokładnie jak w głównym endpoincie)
         return classification_results
             
     except HTTPException:
@@ -473,14 +456,14 @@ async def guest_upload(file: UploadFile = File(...)):
         )
 
 # --- Endpointy administratora ---
+# Endpoint do pobierania statystyk dla panela administratora.
 @app.get("/api/admin/stats", response_model=AdminStats)
 def get_admin_stats(db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
-    """Pobiera statystyki dla panelu administratora"""
+
     total_users = db.query(User).count()
     total_history = db.query(History).count()
     total_banknotes = db.query(Banknote).count()
     
-    # Aktywność z ostatnich 24 godzin
     yesterday = get_polish_time() - timedelta(days=1)
     recent_activity = db.query(History).filter(History.timestamp >= yesterday).count()
     
@@ -491,10 +474,11 @@ def get_admin_stats(db: Session = Depends(get_db), admin_user: User = Depends(ge
         total_banknotes=total_banknotes
     )
 
-# Dodatkowy endpoint zgodny z oryginalnym API admin_panel
+
+# Endpoint do pobierania statystyk dla panela administratora.
 @app.get("/admin/dashboard")
 def get_dashboard_stats(db: Session = Depends(get_db)):
-    """Dashboard dla admina – zwraca statystyki zgodne z wymaganym formatem JSON."""
+
     try:
         # Liczba rekordów w tabeli History
         history_count = db.query(History).count()
@@ -502,7 +486,7 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
         # Liczba rekordów w tabeli User
         users_count = db.query(User).count()
         
-        # Liczba banknotów w systemie (26 różnych typów)
+        # Liczba banknotów w systemie
         countries_count = 26
         
         return {
@@ -520,15 +504,16 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
             "server_status": "off"
         }
 
+# Endpoint do pobierania listy wszystkich użytkowników.
 @app.get("/api/admin/users", response_model=List[AdminUser])
 def get_admin_users(db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
-    """Pobiera listę wszystkich użytkowników"""
+
     users = db.query(User).order_by(User.id).all()
     return users
 
+# Endpoint do pobierania historii dla administratora.
 @app.get("/api/admin/history", response_model=List[AdminHistoryEntry])
 def get_admin_history(db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
-    """Pobiera historię wszystkich użytkowników"""
     history_entries = db.query(
         History.id,
         History.user_id,
@@ -539,10 +524,10 @@ def get_admin_history(db: Session = Depends(get_db), admin_user: User = Depends(
         History.timestamp
     ).join(User, History.user_id == User.id).order_by(desc(History.timestamp)).limit(100).all()
     
-    # Przekształć dane na format AdminHistoryEntry
+
     result = []
     for entry in history_entries:
-        # Wybierz najlepsze przewidywanie
+
         predictions = [entry.knn_pred, entry.rf_pred, entry.svm_pred]
         prediction = max(set(predictions), key=predictions.count) if predictions else "Nie rozpoznano"
         
@@ -556,9 +541,10 @@ def get_admin_history(db: Session = Depends(get_db), admin_user: User = Depends(
     
     return result
 
+# Endpoint do usuwania użytkownika.
 @app.delete("/api/admin/users/{user_id}")
 def delete_user(user_id: int, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
-    """Usuwa użytkownika (tylko administrator)"""
+   
     if user_id == admin_user.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -581,9 +567,10 @@ def delete_user(user_id: int, db: Session = Depends(get_db), admin_user: User = 
     
     return {"message": f"Użytkownik {user.username} został usunięty"}
 
+# Endpoint do przełączania statusu administratora użytkownika.
 @app.put("/api/admin/users/{user_id}/admin")
 def toggle_admin_status(user_id: int, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
-    """Przełącza status administratora użytkownika"""
+
     if user_id == admin_user.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -602,10 +589,10 @@ def toggle_admin_status(user_id: int, db: Session = Depends(get_db), admin_user:
     
     return {"message": f"Status administratora dla {user.username} zmieniony na {user.admin}"}
 
-# Dodatkowe endpointy zgodne z oryginalnym API admin_panel
+# Endpoint do pobierania listy wszystkich użytkowników.
 @app.get("/admin/users")
 def get_users_admin(db: Session = Depends(get_db)):
-    """Zwraca listę wszystkich użytkowników w bazie (bez autoryzacji dla kompatybilności)"""
+
     try:
         return db.query(User).all()
     except Exception as e:
@@ -613,19 +600,20 @@ def get_users_admin(db: Session = Depends(get_db)):
             "server_status": -1
         }
 
+# Endpoint do zwracania całej historii.
 @app.get("/admin/history/all", response_model=List[HistoryItem])
 def get_all_history_admin(db: Session = Depends(get_db)):
-    """Zwraca całą historię (bez autoryzacji dla kompatybilności)"""
+
     history = db.query(History).order_by(History.timestamp.desc()).all()
     return history
 
+# Endpoint do usuwania użytkownika.
 @app.delete("/admin/users/{userID}")
 def delete_user_admin(userID: int, db: Session = Depends(get_db)):
-    """Usuwa użytkownika (bez autoryzacji dla kompatybilności)"""
     try:
         print(f"Attempting to delete user with ID: {userID}")
 
-        # Sprawdź czy użytkownik istnieje
+
         user = db.query(User).filter(User.id == userID).first()
         if not user:
             raise HTTPException(
@@ -635,14 +623,14 @@ def delete_user_admin(userID: int, db: Session = Depends(get_db)):
 
         print(f"Found user: {user.username}")
 
-        # Ustaw user_id na NULL w tabeli history (zamiast usuwania rekordów)
+
         updated_count = db.query(History).filter(History.user_id == userID).update(
             {"user_id": None},
             synchronize_session=False
         )
         print(f"Updated {updated_count} history records to remove user reference")
 
-        # Teraz usuń użytkownika
+
         deleted_count = db.query(User).filter(User.id == userID).delete()
         print(f"Deleted {deleted_count} user records")
 
@@ -674,13 +662,14 @@ def delete_user_admin(userID: int, db: Session = Depends(get_db)):
             detail="An error occurred while deleting the user"
         )
 
+# Endpoint do przełączania statusu administratora użytkownika.
 @app.patch("/admin/users/{userID}/admin")
 def update_user_admin_privileges_admin(
         userID: int,
         admin_data: AdminUpdateRequest,
         db: Session = Depends(get_db)
 ):
-    """Przełącza status administratora użytkownika (bez autoryzacji dla kompatybilności)"""
+
     try:
         print(f"Attempting to update admin privileges for user ID: {userID}")
         print(f"New admin status: {admin_data.admin}")
@@ -695,7 +684,7 @@ def update_user_admin_privileges_admin(
 
         print(f"Found user: {user.username}, current admin status: {user.admin}")
 
-        # Sprawdź czy zmiana jest rzeczywiście potrzebna
+        
         if user.admin == admin_data.admin:
             return {
                 "success": True,
@@ -705,7 +694,7 @@ def update_user_admin_privileges_admin(
                 "admin": user.admin
             }
 
-        # Zaktualizuj status administratora
+        # Aktualizuj status administratora
         user.admin = admin_data.admin
         db.commit()
         db.refresh(user)
@@ -734,9 +723,9 @@ def update_user_admin_privileges_admin(
             detail="An error occurred while updating admin privileges"
         )
 
+# Endpoint do tworzenia nowego użytkownika.
 @app.post("/admin/users")
 def create_user_admin(user_data: CreateUserRequest, db: Session = Depends(get_db)):
-    """Tworzy nowego użytkownika (bez autoryzacji dla kompatybilności)"""
     try:
         print(f"Attempting to create user: {user_data.username}")
         print(f"Admin privileges: {user_data.admin}")
@@ -754,7 +743,7 @@ def create_user_admin(user_data: CreateUserRequest, db: Session = Depends(get_db
                 detail="Password must be at least 6 characters long"
             )
 
-        # Sprawdź czy użytkownik już istnieje
+        # Sprawdzanie czy użytkownik istnieje
         existing_user = db.query(User).filter(User.username == user_data.username.strip()).first()
         if existing_user:
             raise HTTPException(
@@ -765,7 +754,7 @@ def create_user_admin(user_data: CreateUserRequest, db: Session = Depends(get_db
         # Utwórz nowego użytkownika
         new_user = User(
             username=user_data.username.strip(),
-            password=user_data.password,  # W produkcji: zahashuj hasło!
+            password=user_data.password,
             admin=user_data.admin
         )
 
@@ -797,16 +786,15 @@ def create_user_admin(user_data: CreateUserRequest, db: Session = Depends(get_db
         )
 
 # --- ENDPOINTY BANKNOTÓW ---
-
+# Endpoint do pobierania listy wszystkich banknotów.
 @app.get("/api/banknotes", response_model=List[BanknoteResponse])
 def get_banknotes(db: Session = Depends(get_db)):
-    """Pobiera listę wszystkich banknotów"""
     banknotes = db.query(Banknote).order_by(Banknote.denomination).all()
     return banknotes
 
+# Endpoint do pobierania konkretnego banknotu po ID.
 @app.get("/api/banknotes/{banknote_id}", response_model=BanknoteResponse)
 def get_banknote(banknote_id: int, db: Session = Depends(get_db)):
-    """Pobiera konkretny banknot po ID"""
     banknote = db.query(Banknote).filter(Banknote.id == banknote_id).first()
     if not banknote:
         raise HTTPException(
@@ -815,11 +803,10 @@ def get_banknote(banknote_id: int, db: Session = Depends(get_db)):
         )
     return banknote
 
+# Endpoint do tworzenia nowego banknotu.
 @app.post("/api/banknotes", response_model=BanknoteResponse)
 def create_banknote(banknote_data: BanknoteCreate, db: Session = Depends(get_db)):
-    """Tworzy nowy banknot"""
     try:
-        # Zapisz obrazy base64 do plików
         avers_path = None
         rewers_path = None
         
@@ -847,7 +834,6 @@ def create_banknote(banknote_data: BanknoteCreate, db: Session = Depends(get_db)
         return new_banknote
     except Exception as e:
         db.rollback()
-        # Usuń zapisane pliki w przypadku błędu
         if 'avers_path' in locals() and avers_path:
             delete_image_file(avers_path)
         if 'rewers_path' in locals() and rewers_path:
@@ -857,9 +843,9 @@ def create_banknote(banknote_data: BanknoteCreate, db: Session = Depends(get_db)
             detail=f"Error creating banknote: {str(e)}"
         )
 
+# Endpoint do aktualizacji banknotu.
 @app.put("/api/banknotes/{banknote_id}", response_model=BanknoteResponse)
 def update_banknote(banknote_id: int, banknote_data: BanknoteUpdate, db: Session = Depends(get_db)):
-    """Aktualizuje banknot"""
     try:
         banknote = db.query(Banknote).filter(Banknote.id == banknote_id).first()
         if not banknote:
@@ -868,29 +854,28 @@ def update_banknote(banknote_id: int, banknote_data: BanknoteUpdate, db: Session
                 detail="Banknote not found"
             )
         
-        # Zapisz stare ścieżki obrazów
         old_avers_path = banknote.image_avers
         old_rewers_path = banknote.image_rewers
         
-        # Aktualizuj tylko podane pola
+
         update_data = banknote_data.dict(exclude_unset=True)
         
-        # Obsłuż obrazy base64
+
         if 'image_avers' in update_data and update_data['image_avers']:
             if update_data['image_avers'].startswith('data:image'):
-                # Nowy obraz base64 - zapisz do pliku
+
                 new_avers_path = save_base64_image(update_data['image_avers'])
                 update_data['image_avers'] = new_avers_path
-                # Usuń stary plik
+
                 if old_avers_path:
                     delete_image_file(old_avers_path)
         
         if 'image_rewers' in update_data and update_data['image_rewers']:
             if update_data['image_rewers'].startswith('data:image'):
-                # Nowy obraz base64 - zapisz do pliku
+
                 new_rewers_path = save_base64_image(update_data['image_rewers'])
                 update_data['image_rewers'] = new_rewers_path
-                # Usuń stary plik
+
                 if old_rewers_path:
                     delete_image_file(old_rewers_path)
         
@@ -910,9 +895,9 @@ def update_banknote(banknote_id: int, banknote_data: BanknoteUpdate, db: Session
             detail=f"Error updating banknote: {str(e)}"
         )
 
+# Endpoint do usuwania banknotu.
 @app.delete("/api/banknotes/{banknote_id}")
 def delete_banknote(banknote_id: int, db: Session = Depends(get_db)):
-    """Usuwa banknot"""
     try:
         banknote = db.query(Banknote).filter(Banknote.id == banknote_id).first()
         if not banknote:

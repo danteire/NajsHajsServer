@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-"""
-Skrypt do testowania API NajsHajs z JWT
-"""
 
 import requests
 import json
@@ -9,7 +6,6 @@ import json
 BASE_URL = "https://najshajs.mywire.org"
 
 def test_register():
-    """Test rejestracji nowego użytkownika"""
     print("=== Test rejestracji ===")
     url = f"{BASE_URL}/api/register"
     data = {
@@ -29,7 +25,6 @@ def test_register():
         print(f"❌ Błąd połączenia: {e}")
 
 def test_login():
-    """Test logowania"""
     print("\n=== Test logowania ===")
     url = f"{BASE_URL}/api/token"
     data = {
@@ -53,7 +48,6 @@ def test_login():
         return None
 
 def test_me(token):
-    """Test pobierania informacji o użytkowniku"""
     print("\n=== Test /me ===")
     url = f"{BASE_URL}/api/me"
     headers = {
@@ -72,7 +66,6 @@ def test_me(token):
         print(f"❌ Błąd połączenia: {e}")
 
 def test_history(token):
-    """Test pobierania historii"""
     print("\n=== Test /api/history ===")
     url = f"{BASE_URL}/api/history"
     headers = {

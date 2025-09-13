@@ -11,11 +11,11 @@ from torchvision.transforms import v2 as transforms
 
 from embedder.embedding_model import MobileNetV3Embedder
 
-# --- Zmienne globalne na modele ---
+
 MODELS = {}
 
 
-# --- Transformacje (bez zmian) ---
+
 def pad_to_square(img):
     w, h = img.size
     m = max(w, h)
@@ -35,9 +35,9 @@ transform_mobilenet = transforms.Compose([
 ])
 
 
-# --- Funkcje pomocnicze (z drobnymi zmianami) ---
+
 def extract_embeddings(pil_img: Image.Image) -> tuple:
-    """Przetwarza obraz PIL i zwraca logits oraz embeddingi."""
+
     img_t = transform_mobilenet(pil_img).unsqueeze(0)
     with torch.no_grad():
         logits, embeddings = MODELS['embedder'](img_t)
@@ -49,7 +49,7 @@ def proba_dict(proba, labels) -> dict:
 
 
 def classify(embeddings) -> dict:
-    """Używa załadowanych klasyfikatorów do predykcji na podstawie embeddingów."""
+
     emb_scaled = MODELS['scaler'].transform(embeddings.reshape(1, -1))[0]
 
     # KNN
@@ -72,35 +72,33 @@ def classify(embeddings) -> dict:
 
 # --- GŁÓWNA FUNKCJA PRZETWARZAJĄCA ---
 def procesIMG(pil_img: Image.Image) -> Dict[str, Any]:
-    """
-    Przetwarza pojedynczy obraz PIL i zwraca słownik z wynikami klasyfikacji.
-    """
+
     if not MODELS:
         raise RuntimeError("Modele nie zostały załadowane. Użyj funkcji load_models().")
 
-    # Krok 1: Ekstrakcja cech (embeddingów) z obrazu
+
     _logits, emb = extract_embeddings(pil_img)
 
-    # Krok 2: Klasyfikacja na podstawie embeddingów
+
     results = classify(emb)
 
     return results
 
 
-# --- Funkcja do jednorazowego ładowania modeli ---
+
 def load_models():
-    """Ładuje wszystkie modele do pamięci."""
+
     print("Ładowanie modeli...")
     models_base_path = 'models/'
     embedder_path = 'embedder/mobilenetv3_embedder_statedict.pth'
 
-    # ---- ZMIEŃ 25 NA 26 W TEJ LINII ----
+
     MODELS['embedder'] = MobileNetV3Embedder(weights=None, embedding_dim=512, num_classes=26)
 
-    # Krok 2: Załaduj wagi (state_dict) do tej instancji
+
     MODELS['embedder'].load_state_dict(torch.load(embedder_path, map_location='cpu'))
 
-    # Ustaw model w tryb ewaluacji
+
     MODELS['embedder'].eval()
 
     MODELS['scaler'] = load(f"{models_base_path}scaler.joblib")

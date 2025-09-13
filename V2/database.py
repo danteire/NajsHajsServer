@@ -11,7 +11,7 @@ DATABASE_URL = "postgresql://postgres:admin@localhost:5432/NajsHajs"
 
 # Funkcja do pobierania czasu polskiego
 def get_polish_time():
-    """Zwraca aktualny czas w strefie czasowej Polski"""
+
     poland_tz = pytz.timezone('Europe/Warsaw')
     return datetime.now(poland_tz)
 
@@ -43,7 +43,7 @@ class History(Base):
     rf_pred = Column(String)
     svm_pred = Column(String)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    image = Column(String, nullable=True)  # Ścieżka do obrazu użytkownika
+    image = Column(String, nullable=True)
 
     # Relacja do User
     user = relationship("User", back_populates="history")
@@ -53,22 +53,20 @@ class Banknote(Base):
     __tablename__ = "banknotes"
 
     id = Column(Integer, primary_key=True, index=True)
-    country = Column(String(100), nullable=False)  # Kraj
-    currency = Column(String(100), nullable=False)  # Waluta
-    denomination = Column(String(50), nullable=False)  # Nominał, np. '10 PLN'
-    effigy = Column(String(255))  # Wizerunek, np. 'Mieszko I'
-    dimensions = Column(String(50))  # Wymiary, np. '120 x 62 mm'
-    description = Column(Text)  # Opis
-    image_avers = Column(String(255), nullable=False)   # Ścieżka do zdjęcia awersu
-    image_rewers = Column(String(255), nullable=False)  # Ścieżka do zdjęcia rewersu
+    country = Column(String(100), nullable=False)
+    currency = Column(String(100), nullable=False)
+    denomination = Column(String(50), nullable=False)
+    effigy = Column(String(255))
+    dimensions = Column(String(50))
+    description = Column(Text)
+    image_avers = Column(String(255), nullable=False)
+    image_rewers = Column(String(255), nullable=False)
     created_at = Column(DateTime, default=get_polish_time)
 
 
 # --- FUNKCJE NARZĘDZIOWE ---
 def get_db():
-    """
-    Dependency do użycia w FastAPI – zwraca sesję bazy danych.
-    """
+   
     db = SessionLocal()
     try:
         yield db
@@ -77,10 +75,7 @@ def get_db():
 
 
 def check_and_prepare_database():
-    """
-    Sprawdza połączenie z bazą danych, wylistowuje istniejące tabele
-    i tworzy brakujące.
-    """
+    
     print("Sprawdzanie połączenia z bazą danych...")
     try:
         inspector = inspect(engine)
@@ -100,7 +95,7 @@ def check_and_prepare_database():
             print("   Wszystkie wymagane tabele istnieją. Gotowe ✅")
 
     except OperationalError as e:
-        print("❌ BŁĄD: Nie można połączyć się z bazą danych!", file=sys.stderr)
+        print(" BŁĄD: Nie można połączyć się z bazą danych!", file=sys.stderr)
         print("   Upewnij się, że kontener Docker z PostgreSQL jest uruchomiony.", file=sys.stderr)
         print(f"   Szczegóły błędu: {e}", file=sys.stderr)
         raise
